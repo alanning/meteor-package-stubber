@@ -78,7 +78,7 @@ _.extend(PackageStubber, {
      */
     generateStubJsCode: function (target) {
       if (null === target ||
-          ('object' !== typeof target && 'function' !== typeof target)) {
+          !('object' === typeof target || 'function' === typeof target)) {
         throw new Error("[PackageStubber.generateStubJsCode] Required field " +
                         "'target' must be of type object or function")
       }
@@ -117,7 +117,7 @@ _.extend(PackageStubber, {
                       path.join(pwd, 'tests', 'a1-package-stub.js')
     options.dontStub = options.dontStub || []
 
-    validate.stubPackages(options)
+    PackageStubber.validate.stubPackages(options)
 
     if (options.outfile[0] !== path.sep) {
       options.outfile = path.join(pwd, options.outfile)
@@ -130,9 +130,10 @@ _.extend(PackageStubber, {
     // ignore test packages
     packagesToIgnore = PackageStubber.getTestPackageNames()
     packagesToIgnore.push('velocity')
+    packagesToIgnore.push('mirror')
     
     // ignore 'dontStub' packages
-    _.each(dontStub, function (packageName) {
+    _.each(options.dontStub, function (packageName) {
       packagesToIgnore.push(packageName)
     })
 
@@ -142,7 +143,7 @@ _.extend(PackageStubber, {
 
     // build stubs
     _.each(packageExports, function (name) {
-      DEBUG && console.log('  stubbing', name)
+      DEBUG && console.log('[PackageStubber] stubbing', name)
       // `stubs` object will have one field of type `string` for each global
       // object that is being stubbed (ie. each package export)
       stubs[name] = PackageStubber.generateStubJsCode(global[name])
@@ -179,6 +180,8 @@ _.extend(PackageStubber, {
     var smartJsonFiles,
         names = []
         
+    options = options || {}
+
     if ('string' !== typeof options.appDir) {
       options.appDir = pwd
     }
@@ -197,7 +200,7 @@ _.extend(PackageStubber, {
         }
       } 
       catch (ex) {
-        DEBUG && console.log(filePath, ex)
+        DEBUG && console.log('[PackageStubber]', filePath, ex)
       }
     })
 
@@ -240,18 +243,18 @@ _.extend(PackageStubber, {
           found;
 
       if (PackageStubber.shouldIgnorePackage(options.packagesToIgnore, filePath)) {
-        DEBUG && console.log('  ignoring', path.dirname(filePath))
+        DEBUG && console.log('[PackageStubber] ignoring', path.dirname(filePath))
         return
       }
 
       try {
         file = fs.readFileSync(path.join(options.appDir, "packages", filePath), 'utf8')
         while(found = exportsRE.exec(file)) {
-          DEBUG && console.log('  found package export', filePath, found[2])
+          DEBUG && console.log('[PackageStubber] found', found[2], 'in', filePath)
           packageExports.push(found[2])
         }
       } catch (ex) {
-        DEBUG && console.log('ERROR reading file', filePath, ex)
+        DEBUG && console.log('[PackageStubber] Error reading file', filePath, ex)
       }
     })
 
@@ -275,7 +278,7 @@ _.extend(PackageStubber, {
         type
 
     dest = dest || {}
-    validate._stubObject(target, dest)
+    PackageStubber.validate._stubObject(target, dest)
 
     for (fieldName in target) {
       type = typeof target[fieldName]
@@ -345,7 +348,7 @@ _.extend(PackageStubber, {
         stubInStringForm,
         wrapFunction = false;
 
-    validate.generateStubJsCode(target)
+    PackageStubber.validate.generateStubJsCode(target)
 
     if (typeof target == 'function') {
       // ex. moment().format('MMM dd, YYYY')

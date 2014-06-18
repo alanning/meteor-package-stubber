@@ -4,5 +4,6 @@
     "homepage": "https://github.com/alanning/meteor-package-stubber",
     "author": "Adrian Lanning",
     "version": "0.0.1",
-    "git": "https://github.com/alanning/meteor-package-stubber.git"
+    "git": "https://github.com/alanning/meteor-package-stubber.git",
+    "testPackage": true
 }

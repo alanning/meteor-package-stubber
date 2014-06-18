@@ -8,7 +8,7 @@ Npm.depends({
 });
 
 Package.on_use(function (api) {
-  api.add_files('main.js');
+  api.add_files('main.js', 'server');
 
-  api.export && api.export('PackageStubber')
+  api.export && api.export('PackageStubber', 'server')
 });
