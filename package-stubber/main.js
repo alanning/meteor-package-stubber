@@ -11,7 +11,12 @@ var pwd = process.env.PWD,
     fs = Npm.require('fs'),
     path = Npm.require('path'),
     glob = Npm.require('glob'),
-    _ = Npm.require('lodash')
+    _ = Npm.require('lodash'),
+    defaultPackagesToIgnore = [
+      'meteor-package-stubber',
+      'velocity',
+      'mirror'
+    ]
 
 _.extend(PackageStubber, {
 
@@ -129,8 +134,11 @@ _.extend(PackageStubber, {
 
     // ignore test packages
     packagesToIgnore = PackageStubber.getTestPackageNames()
-    packagesToIgnore.push('velocity')
-    packagesToIgnore.push('mirror')
+
+    // ignore defaults
+    _.each(defaultPackagesToIgnore, function (packageName) {
+      packagesToIgnore.push(packageName)
+    })
     
     // ignore 'dontStub' packages
     _.each(options.dontStub, function (packageName) {
