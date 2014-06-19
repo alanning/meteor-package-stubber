@@ -14,6 +14,7 @@ var pwd = process.env.PWD,
     _ = Npm.require('lodash'),
     defaultPackagesToIgnore = [
       'meteor-package-stubber',
+      'package-stubber',
       'velocity',
       'mirror'
     ]
