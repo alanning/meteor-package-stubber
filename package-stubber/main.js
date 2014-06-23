@@ -73,21 +73,6 @@ _.extend(PackageStubber, {
         throw new Error("[PackageStubber._stubObject] If supplied, the " +
                         "'dest' field must be an object")
       }
-    },
-
-
-
-    /**
-     * Validate function arguments
-     * 
-     * @method validate.generateStubJsCode
-     */
-    generateStubJsCode: function (target) {
-      if (null === target ||
-          !('object' === typeof target || 'function' === typeof target)) {
-        throw new Error("[PackageStubber.generateStubJsCode] Required field " +
-                        "'target' must be of type object or function")
-      }
     }
 
   },  // end validate
@@ -152,10 +137,16 @@ _.extend(PackageStubber, {
 
     // build stubs
     _.each(packageExports, function (name) {
-      DEBUG && console.log('[PackageStubber] stubbing', name)
-      // `stubs` object will have one field of type `string` for each global
-      // object that is being stubbed (ie. each package export)
-      stubs[name] = PackageStubber.generateStubJsCode(global[name])
+      var stubTarget = global[name]
+      if (stubTarget) {
+        DEBUG && console.log('[PackageStubber] stubbing', name)
+        // `stubs` object will have one field of type `string` for each global
+        // object that is being stubbed (ie. each package export)
+        stubs[name] = PackageStubber.generateStubJsCode(stubTarget, name)
+      } else {
+        DEBUG && 
+          console.log('[PackageStubber] ignored undefined package export', name)
+      }
     })
 
     // prep for file write
@@ -339,6 +330,111 @@ _.extend(PackageStubber, {
   },
 
 
+  stubGenerators: {
+
+    /**
+     * Generates a stub in string form for function types.
+     *
+     * @method stubGenerators.function
+     * @param {Function} target Target function to stub
+     * @param {String} name Name of target object for use in reporting errors
+     * @return {String} Javascript code in string form which, when executed, 
+     *                  builds the stub in the then-current global context
+     */
+    'function': function (target, name) {
+      var stubInStringForm,
+          defaultReturnStr = PackageStubber.functionReplacementStr
+
+      // Attempt to instantiate new constructor with no parameters.
+      //   ex. moment().format('MMM dd, YYYY')
+      // Some packages have global function objects which throw an error
+      // if no parameters are passed (ex. IronRouter's RouteController).
+      // In this case, not much we can do.  Just alert the user and stub
+      // with an empty function.
+
+      try {
+        target = target()
+      } catch (ex) {
+        console.log("[PackageStubber] Calling exported function '" +
+                    name + "' with no parameters produced an error. " +
+                    "'" + name + "' has been stubbed with an empty function " +
+                    "but if you receive errors due to missing fields in " +
+                    "this package, you will need to supply your own " +
+                    "custom stub. The original error was: ", ex.message)
+        return defaultReturnStr
+      }
+
+      stubInStringForm = PackageStubber.stubGenerators['object'](target, name)
+      stubInStringForm = "function () { return " + stubInStringForm + "; }"
+      return stubInStringForm
+    },
+
+    /**
+     * Generates a stub in string form for object types.
+     *
+     * @method stubGenerators.object
+     * @param {Object} target Target object to stub
+     * @param {String} name Name of target object for use in reporting errors
+     * @return {String} String representation of the target object.
+     */
+    'object': function (target, name) {
+      var intermediateStub,
+          stubInStringForm,
+          defaultReturnStr = "{}"
+
+      try {
+        intermediateStub = PackageStubber._stubObject(target)
+        stubInStringForm = PackageStubber.replaceFnPlaceholders(
+                               JSON.stringify(intermediateStub, null, 2))
+        return stubInStringForm
+      } catch (ex) {
+        console.log("[PackageStubber] Error generating stub for exported " +
+                    "object '" + name + "'. '" + name + "' has been " +
+                    "stubbed with an empty object but if you receive " +
+                    "errors due to missing fields in this package, you " +
+                    "will need to supply your own custom stub. The " +
+                    "original error follows:\n", ex.message)
+        return defaultReturnStr
+      }
+    },
+
+    /**
+     * Generates a stub in string form for string types.
+     *
+     * @method stubGenerators.string
+     * @param {Object} target Target string to stub
+     * @param {String} name Name of target string for use in reporting errors
+     * @return {String} The original target string, passed through
+     */
+    'string': function (target, name) {
+      return target
+    },
+
+    /**
+     * Generates a stub in string form for number types.
+     *
+     * @method stubGenerators.number
+     * @param {Object} target Target number to stub
+     * @param {String} name Name of target number for use in reporting errors
+     * @return {String} The original target number, converted to a string
+     */
+    'number': function (target, name) {
+      return target.toString()
+    },
+
+    /**
+     * Generates a stub in string form for undefined targets.
+     *
+     * @method stubGenerators.undefined
+     * @return {String} "undefined"
+     */
+    'undefined': function () {
+      return 'undefined'
+    }
+
+  },  // end stubGenerators
+
+
   /**
    * Creates a stub of the target object or function.  Stub is in the form
    * of js code in string form which, when executed, builds the stubs in 
@@ -348,32 +444,32 @@ _.extend(PackageStubber, {
    * in a new, Meteor-free context.
    *
    * @method generateStubJsCode
-   * @param {Object|Function} target Object/function to stub
+   * @param {Any} target Target to stub
+   * @param {String} name Name thing to stub for use in reporting errors
    * @return {String} Javascript code in string form which, when executed, 
    *                  builds the stub in the then-current global context
    */
-  generateStubJsCode: function (target) {
-    var intermediateStub,
-        stubInStringForm,
-        wrapFunction = false;
+  generateStubJsCode: function (target, name) {
+    var typeOfTarget = typeof target,
+        stubGenerator 
 
-    PackageStubber.validate.generateStubJsCode(target)
-
-    if (typeof target == 'function') {
-      // ex. moment().format('MMM dd, YYYY')
-      target = target()
-      wrapFunction = true
+    if (null === target) {
+      // handle null special case since it has type "object"
+      return "null"
     }
 
-    intermediateStub = PackageStubber._stubObject(target)
-    stubInStringForm = PackageStubber.replaceFnPlaceholders(
-                           JSON.stringify(intermediateStub, null, 2))
+    // dispatch to generator function based on type of target
 
-    if (wrapFunction) {
-      stubInStringForm = "function () { return " + stubInStringForm + "; }"
-    } 
+    stubGenerator = PackageStubber.stubGenerators[typeOfTarget]
 
-    return stubInStringForm
+    if (!stubGenerator) {
+      throw new Error("[PackageStubber] Could not stub package export '" +
+                      name + "'.  Missing stub generator for type", 
+                      typeOfTarget)
+    }
+
+    return stubGenerator(target, name)
+
   }  // end generateStubJsCode
 
 })  // end _.extend PackageStubber
