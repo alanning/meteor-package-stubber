@@ -98,7 +98,9 @@ _.extend(PackageStubber, {
   stubPackages: function (options) {
     var stubs = {},
         packagesToIgnore,
+        usedPackages,
         packageExports = [],
+        customStubs = [],
         name,
         out = "";
 
@@ -119,7 +121,7 @@ _.extend(PackageStubber, {
     } 
 
     // ignore test packages
-    packagesToIgnore = PackageStubber.getTestPackageNames()
+    packagesToIgnore = PackageStubber.listTestPackages()
 
     // ignore defaults
     _.each(defaultPackagesToIgnore, function (packageName) {
@@ -131,21 +133,45 @@ _.extend(PackageStubber, {
       packagesToIgnore.push(packageName)
     })
 
-    packageExports = PackageStubber.getPackageExports({
+    // check for manually stubbed packages
+    usedPackages = PackageStubber.listPackages()
+    _.each(usedPackages, function (packageName) {
+      var stubFile = packageName + "-stub.js",
+          stubFilePath = path.join(pwd, 'packages', 'package-stubber', stubFile)
+
+      if (fs.existsSync(stubFilePath)) {
+        DEBUG && console.log('[PackageStubber] custom stub found for package',
+                             packageName)
+        packagesToIgnore.push(packageName)
+        customStubs.push({
+          package: packageName,
+          filePath: stubFilePath
+        })
+      }
+    })
+    
+    // get list of package 'exports'
+    packageExports = PackageStubber.listPackageExports({
                        packagesToIgnore: packagesToIgnore
                      })
 
     // build stubs
-    _.each(packageExports, function (name) {
-      var stubTarget = global[name]
-      if (stubTarget) {
-        DEBUG && console.log('[PackageStubber] stubbing', name)
+    _.each(packageExports, function (exportInfo) {
+      var name = exportInfo.name,
+          package = exportInfo.package,
+          toStub = global[name]
+
+      if (toStub) {
+        DEBUG && console.log('[PackageStubber] stubbing', name, 
+                             'in package', package)
         // `stubs` object will have one field of type `string` for each global
         // object that is being stubbed (ie. each package export)
-        stubs[name] = PackageStubber.generateStubJsCode(stubTarget, name)
+        stubs[name] = PackageStubber.generateStubJsCode(toStub, name, package)
       } else {
-        DEBUG && 
-          console.log('[PackageStubber] ignored undefined package export', name)
+        DEBUG && console.log('[PackageStubber] ignored missing export', name,
+                             'from package', package + ". NOTE: You may have" +
+                             " to stub this export yourself if you " +
+                             "experience errors testing client-side code.")
       }
     })
 
@@ -156,6 +182,14 @@ _.extend(PackageStubber, {
     }
 
     fs.writeFileSync(options.outfile, out)
+
+    // append custom stubs
+    _.each(customStubs, function (stubConfig) {
+      DEBUG && console.log('[PackageStubber] appending custom stub for package',
+                           stubConfig.package)
+      fs.appendFileSync(options.outfile, fs.readFileSync(stubConfig.filePath))
+    })
+    
   },  // end stubPackages
 
 
@@ -170,13 +204,13 @@ _.extend(PackageStubber, {
    *
    * NOTE: Does not need to be run in a Meteor context.
    *
-   * @method getTestPackageNames
+   * @method listTestPackages
    * @param {Object} [options]
    *   @param {String} [appDir] Directory path of Meteor application to 
    *                            identify test packages for.
    *                            Default: PWD (process working directory)
    */
-  getTestPackageNames: function  (options) {
+  listTestPackages: function (options) {
     var smartJsonFiles,
         names = []
         
@@ -205,7 +239,28 @@ _.extend(PackageStubber, {
     })
 
     return names
-  },  // end getTestPackageNames 
+  },  // end listTestPackages 
+
+
+  /**
+   * List the names of all non-core packages used by the app.
+   *
+   * @method listPackages
+   * @param {Object} [options]
+   *   @param {String} [appDir] Directory path of Meteor application to 
+   *                            identify package exports for.
+   *                            Default: PWD (process working directory)
+   * @return {Array} names of all non-core packages used by app
+   */
+  listPackages: function (options) {
+    options = options || {}
+
+    if ('string' !== typeof options.appDir) {
+      options.appDir = pwd
+    }
+
+    return ls (path.join(options.appDir, 'packages'))
+  },
 
 
   /**
@@ -218,13 +273,15 @@ _.extend(PackageStubber, {
    *
    * NOTE: Does not need to be run in a Meteor context.
    *
-   * @method getPackageExports
+   * @method listPackageExports
    * @param {Object} [options]
    *   @param {String} [appDir] Directory path of Meteor application to 
    *                            identify package exports for.
    *                            Default: PWD (process working directory)
+   * @return {Array} list of info objects about package exports
+   *   ex. [{package: 'iron-router', name: 'RouteController'}, {...}]
    */
-  getPackageExports: function (options) {
+  listPackageExports: function (options) {
     var packageJsFiles,
         packageExports = [],
         exportsRE = /api\.export\s*\(\s*(['"])(.*?)\1/igm;
@@ -239,11 +296,12 @@ _.extend(PackageStubber, {
                                {cwd: path.join(options.appDir, "packages")})
 
     _.each(packageJsFiles, function (filePath) {
-      var file,
+      var package = path.dirname(filePath),
+          file,
           found;
 
       if (PackageStubber.shouldIgnorePackage(options.packagesToIgnore, filePath)) {
-        DEBUG && console.log('[PackageStubber] ignoring', path.dirname(filePath))
+        DEBUG && console.log('[PackageStubber] ignoring', package)
         return
       }
 
@@ -251,7 +309,10 @@ _.extend(PackageStubber, {
         file = fs.readFileSync(path.join(options.appDir, "packages", filePath), 'utf8')
         while(found = exportsRE.exec(file)) {
           DEBUG && console.log('[PackageStubber] found', found[2], 'in', filePath)
-          packageExports.push(found[2])
+          packageExports.push({
+            package: package,
+            name: found[2]
+          })
         }
       } catch (ex) {
         DEBUG && console.log('[PackageStubber] Error reading file', filePath, ex)
@@ -259,7 +320,7 @@ _.extend(PackageStubber, {
     })
 
     return packageExports
-  },  // end getPackageExports
+  },  // end listPackageExports
 
 
   /**
@@ -338,12 +399,14 @@ _.extend(PackageStubber, {
      * @method stubGenerators.function
      * @param {Function} target Target function to stub
      * @param {String} name Name of target object for use in reporting errors
+     * @param {String} package Name of target package for use in errors
      * @return {String} Javascript code in string form which, when executed, 
      *                  builds the stub in the then-current global context
      */
-    'function': function (target, name) {
+    'function': function (target, name, package) {
       var stubInStringForm,
-          defaultReturnStr = PackageStubber.functionReplacementStr
+          defaultReturnStr = PackageStubber.functionReplacementStr,
+          objStubber = PackageStubber.stubGenerators['object']
 
       // Attempt to instantiate new constructor with no parameters.
       //   ex. moment().format('MMM dd, YYYY')
@@ -354,19 +417,19 @@ _.extend(PackageStubber, {
 
       try {
         target = target()
+        stubInStringForm = objStubber(target, name, package)
+        stubInStringForm = "function () { return " + stubInStringForm + "; }"
+        return stubInStringForm
       } catch (ex) {
         console.log("[PackageStubber] Calling exported function '" +
-                    name + "' with no parameters produced an error. " +
+                    name + "' in package '" + package + "' with no parameters" +
+                    " produced an error. " +
                     "'" + name + "' has been stubbed with an empty function " +
                     "but if you receive errors due to missing fields in " +
                     "this package, you will need to supply your own " +
                     "custom stub. The original error was: ", ex.message)
         return defaultReturnStr
       }
-
-      stubInStringForm = PackageStubber.stubGenerators['object'](target, name)
-      stubInStringForm = "function () { return " + stubInStringForm + "; }"
-      return stubInStringForm
     },
 
     /**
@@ -375,9 +438,10 @@ _.extend(PackageStubber, {
      * @method stubGenerators.object
      * @param {Object} target Target object to stub
      * @param {String} name Name of target object for use in reporting errors
+     * @param {String} package Name of target package for use in errors
      * @return {String} String representation of the target object.
      */
-    'object': function (target, name) {
+    'object': function (target, name, package) {
       var intermediateStub,
           stubInStringForm,
           defaultReturnStr = "{}"
@@ -389,7 +453,8 @@ _.extend(PackageStubber, {
         return stubInStringForm
       } catch (ex) {
         console.log("[PackageStubber] Error generating stub for exported " +
-                    "object '" + name + "'. '" + name + "' has been " +
+                    "object '" + name + " in package '" + package + "'. " +
+                    name + "' has been " +
                     "stubbed with an empty object but if you receive " +
                     "errors due to missing fields in this package, you " +
                     "will need to supply your own custom stub. The " +
@@ -446,10 +511,11 @@ _.extend(PackageStubber, {
    * @method generateStubJsCode
    * @param {Any} target Target to stub
    * @param {String} name Name thing to stub for use in reporting errors
+   * @param {String} package Name of target package for use in errors
    * @return {String} Javascript code in string form which, when executed, 
    *                  builds the stub in the then-current global context
    */
-  generateStubJsCode: function (target, name) {
+  generateStubJsCode: function (target, name, package) {
     var typeOfTarget = typeof target,
         stubGenerator 
 
@@ -464,14 +530,44 @@ _.extend(PackageStubber, {
 
     if (!stubGenerator) {
       throw new Error("[PackageStubber] Could not stub package export '" +
-                      name + "'.  Missing stub generator for type", 
-                      typeOfTarget)
+                      name + "' in package '" + package + "'.  Missing stub " +
+                      "generator for type", typeOfTarget)
     }
 
-    return stubGenerator(target, name)
+    return stubGenerator(target, name, package)
 
   }  // end generateStubJsCode
 
 })  // end _.extend PackageStubber
+
+
+
+/**
+ * List all non-hidden directories in target directory
+ *
+ * @method ls
+ * @return {Array} list of all non-hidden directories in target directory
+ * @private
+ */
+function ls (rootDir) {
+  var files = fs.readdirSync(rootDir)
+
+  return _.reduce(files, function (memo, file) {
+    var filePath,
+        stat
+
+    if (file[0] != '.') {
+      filePath = path.join(rootDir, file)
+      stat = fs.statSync(filePath)
+
+      if (stat.isDirectory()) {
+        memo.push(file)
+      }
+    }
+
+    return memo
+  }, [])
+}
+
 
 })();
