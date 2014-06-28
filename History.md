@@ -1,3 +1,8 @@
+## v0.0.7
+
+* remove extraneous console.log
+
+
 ## v0.0.6
 
 * support stubs for core packages

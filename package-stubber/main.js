@@ -141,7 +141,6 @@ _.extend(PackageStubber, {
     // list since dependencies don't show up there).
     coreStubs = glob.sync(path.join(pwd, 'packages',
                                     'package-stubber', 'core-stubs', "*.js"))
-    console.log('coreStubs', coreStubs)
     _.each(coreStubs, function (filePath) {
       var packageName = path.basename(filePath, '.js')
 
