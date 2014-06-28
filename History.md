@@ -1,3 +1,10 @@
+## v0.0.6
+
+* support stubs for core packages
+* add stubs: jquery (zepto), underscore, router, minimongoid, uploader
+* improve iron-router stub
+  
+
 ## v0.0.5
 
 * include package name in error messages

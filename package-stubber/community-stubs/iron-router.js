@@ -5,7 +5,28 @@ var _emptyFn = function emptyFn () {},
     _returnBooleanFn = function () { return true },
     _returnArrayFn = function () { return '' }
 
-RouteController = {}
+RouteController = function () {
+  this.options = {}
+  this.router = null
+  this.route = null
+  this.path = ''
+  this.params = []
+  this.where = 'client'
+  this.action = null
+
+  this.request = {}
+  this.response = {}
+  this.next = {}
+  this._dataValue = {}
+
+  this.data = _emptyFn
+  this.layout = _emptyFn
+  this.setRegion = _emptyFn
+  this.clearRegion = _emptyFn
+}
+RouteController.extend = function () {
+  return new RouteController()
+}
 RouteController.prototype = {
   constructor: RouteController,
   lookupProperty: _returnStringFn,

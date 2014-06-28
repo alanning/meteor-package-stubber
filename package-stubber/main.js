@@ -93,11 +93,12 @@ _.extend(PackageStubber, {
    *   @param {String} [outfile] The file path to write the stubs to.
    *                           Can be either an absolute file path or relative 
    *                           to the current Meteor application.
-   *                           Default: `tests/a1-package-stub.js`
+   *                           Default: `tests/a1-package-stubs.js`
    */
   stubPackages: function (options) {
     var stubs = {},
         packagesToIgnore,
+        coreStubs,
         usedPackages,
         packageExports = [],
         customStubs = [],
@@ -107,7 +108,7 @@ _.extend(PackageStubber, {
     options = options || {}
 
     options.outfile = options.outfile || 
-                      path.join(pwd, 'tests', 'a1-package-stub.js')
+                      path.join(pwd, 'tests', 'a1-package-stubs.js')
     options.dontStub = options.dontStub || []
 
     PackageStubber.validate.stubPackages(options)
@@ -133,11 +134,34 @@ _.extend(PackageStubber, {
       packagesToIgnore.push(packageName)
     })
 
-    // check for manually stubbed packages
+
+    // pull in all stubs for core packages.
+    // these are always included since they are core and we have no way
+    // to detect their use (even .meteor/packages doesn't have a complete
+    // list since dependencies don't show up there).
+    coreStubs = glob.sync(path.join(pwd, 'packages',
+                                    'package-stubber', 'core-stubs', "*.js"))
+    console.log('coreStubs', coreStubs)
+    _.each(coreStubs, function (filePath) {
+      var packageName = path.basename(filePath, '.js')
+
+      DEBUG && console.log('[PackageStubber] custom stub found for core package',
+                           packageName)
+      packagesToIgnore.push(packageName)
+      customStubs.push({
+        package: packageName,
+        filePath: filePath
+      })
+    })
+
+
     usedPackages = PackageStubber.listPackages()
+
+    // check for custom stubs for community packages
     _.each(usedPackages, function (packageName) {
-      var stubFile = packageName + "-stub.js",
-          stubFilePath = path.join(pwd, 'packages', 'package-stubber', stubFile)
+      var stubFile = packageName + ".js",
+          stubFilePath = path.join(pwd, 'packages', 'package-stubber', 
+                                   'community-stubs', stubFile)
 
       if (fs.existsSync(stubFilePath)) {
         DEBUG && console.log('[PackageStubber] custom stub found for package',
