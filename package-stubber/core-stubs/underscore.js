@@ -6,6 +6,8 @@ if ("undefined" === typeof _) {
       DEBUG = 1,
       fn, i,
       emptyFn = function () {},
+      context = (typeof global === 'undefined') ? window : global,
+      
       collections = [
         'each',
         'map',
@@ -135,6 +137,6 @@ if ("undefined" === typeof _) {
     _[fn] = emptyFn;
   }
 
-  global._ = _;
+  context._ = _;
 
 }
