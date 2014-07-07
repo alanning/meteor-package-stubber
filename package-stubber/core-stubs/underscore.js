@@ -1,12 +1,13 @@
 // underscore stub
 
-if ("undefined" === typeof _) {
+var context = (typeof global === 'undefined') ? window : global;
+
+if (context && "undefined" === typeof context._) {
 
   var _,
       DEBUG = 1,
       fn, i,
       emptyFn = function () {},
-      context = (typeof global === 'undefined') ? window : global,
       
       collections = [
         'each',
