@@ -420,7 +420,7 @@ _.extend(PackageStubber, {
   replaceFnPlaceholders: function (str, placeholder, replacement) {
     var regex
 
-    placeholder = placeholder || "FUNCTION_PLACEHOLDER"
+    placeholder = placeholder || '"FUNCTION_PLACEHOLDER"'
     replacement = replacement || PackageStubber.functionReplacementStr
 
     regex = new RegExp(placeholder, 'g')

@@ -1,3 +1,8 @@
+## v0.0.9
+
+* fix quoting bug in function replacement
+
+
 ## v0.0.8
 
 * improve underscore stub
