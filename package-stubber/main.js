@@ -59,19 +59,19 @@ _.extend(PackageStubber, {
     /**
      * Validate function arguments
      * 
-     * @method validate._stubObject
+     * @method validate.deepCopyReplaceFn
      */
-    _stubObject: function (target, dest) {
+    deepCopyReplaceFn: function (target, fnPlaceholder) {
       if (null === target ||
           'object' !== typeof target) {
-        throw new Error("[PackageStubber._stubObject] Required field `target` " +
+        throw new Error("[PackageStubber.deepCopyReplaceFn] Required field `target` " +
                         "must be an object")
       }
-      if (null !== dest &&
-          'undefined' !== typeof dest &&
-          'object' !== typeof dest) {
-        throw new Error("[PackageStubber._stubObject] If supplied, the " +
-                        "'dest' field must be an object")
+      if (null !== fnPlaceholder &&
+          'undefined' !== typeof fnPlaceholder &&
+          'string' !== typeof fnPlaceholder) {
+        throw new Error("[PackageStubber.deepCopyReplaceFn] If supplied, the " +
+                        "'fnPlaceholder' field must be a string")
       }
     }
 
@@ -232,6 +232,8 @@ _.extend(PackageStubber, {
    *   @param {String} [appDir] Directory path of Meteor application to 
    *                            identify test packages for.
    *                            Default: PWD (process working directory)
+   * @return {Array} names of all test packages.  
+   *                 Ex. ['jasmine-unit', 'mocha-web-velocity']
    */
   listTestPackages: function (options) {
     var smartJsonFiles,
@@ -239,9 +241,7 @@ _.extend(PackageStubber, {
         
     options = options || {}
 
-    if ('string' !== typeof options.appDir) {
-      options.appDir = pwd
-    }
+    options.appDir = normalizeAppDir(options)
 
     smartJsonFiles = glob.sync(path.join("**","smart.json"), 
                                {cwd: path.join(options.appDir, "packages")})
@@ -278,9 +278,7 @@ _.extend(PackageStubber, {
   listPackages: function (options) {
     options = options || {}
 
-    if ('string' !== typeof options.appDir) {
-      options.appDir = pwd
-    }
+    options.appDir = normalizeAppDir(options)
 
     return ls (path.join(options.appDir, 'packages'))
   },
@@ -311,9 +309,7 @@ _.extend(PackageStubber, {
         
     options = options || {}
 
-    if ('string' !== typeof options.appDir) {
-      options.appDir = pwd
-    }
+    options.appDir = normalizeAppDir(options)
 
     packageJsFiles = glob.sync(path.join("**", "package.js"), 
                                {cwd: path.join(options.appDir, "packages")})
@@ -347,22 +343,24 @@ _.extend(PackageStubber, {
 
 
   /**
-   * Stub a javascript object, replacing all function fields with a string
-   * placeholder.
+   * Performs a deep copy of the target object, replacing all function fields
+   * with a string placeholder.
    *
-   * @method _stubObject
+   * @method deepCopyReplaceFn
    * @param {Object} target The object that will be stubbed.
-   * @param {Object} [dest] The destination object that will hold the new stub.
-   *                        Default: {}
-   * @return {Object} the stub object, with all functions replaced with the
-   *                  string: "FUNCTION_PLACEHOLDER"
+   * @param {String} [fnPlaceholder] string to use in place of any function 
+   *                 fields.  Default: "FUNCTION_PLACEHOLDER"
+   * @return {Object} new object, with all functions replaced with the
+   *                  fnPlaceholder string
    */
-  _stubObject: function (target, dest) {
-    var fieldName,
+  deepCopyReplaceFn: function (target, fnPlaceholder) {
+    var dest = {},
+        fieldName,
         type
 
-    dest = dest || {}
-    PackageStubber.validate._stubObject(target, dest)
+    PackageStubber.validate.deepCopyReplaceFn(target, fnPlaceholder)
+
+    fnPlaceholder = fnPlaceholder || "FUNCTION_PLACEHOLDER"
 
     for (fieldName in target) {
       type = typeof target[fieldName]
@@ -374,7 +372,7 @@ _.extend(PackageStubber, {
           dest[fieldName] = target[fieldName]
           break;
         case "function":
-          dest[fieldName] = "FUNCTION_PLACEHOLDER";
+          dest[fieldName] = fnPlaceholder;
           break;
         case "object":
           if (target[fieldName] === null) {
@@ -382,14 +380,16 @@ _.extend(PackageStubber, {
           } else if (target[fieldName] instanceof Date) {
             dest[fieldName] = new Date(target[fieldName])
           } else {
-            dest[fieldName] = PackageStubber._stubObject(target[fieldName])
+            dest[fieldName] = PackageStubber.deepCopyReplaceFn(
+                                                  target[fieldName],
+                                                  fnPlaceholder)
           }
           break;
       }
     }
 
     return dest
-  },  // end _stubObject
+  },  // end deepCopyReplaceFn
 
 
   shouldIgnorePackage: function (packagesToIgnore, packagePath) {
@@ -399,19 +399,34 @@ _.extend(PackageStubber, {
   },
 
   /**
-   * Neither JSON.stringify() nor .toString() work for 
-   * functions so we "stub" functions by replacing them with
-   * FUNCTION_PLACEHOLDER string and then converting to 
-   * empty function code in string form.
+   * Neither JSON.stringify() nor .toString() work for functions so we "stub"
+   * functions by:
+   *   1. replacing them with a placeholder string
+   *   2. `JSON.stringify`ing the resulting object
+   *   3. converting placeholders to empty function code in string form
+   *
+   * We need to do the string replacement in two steps because otherwise the
+   * `JSON.stringify` step would escape our functions incorrectly.
    *
    * @method replaceFnPlaceholders
    * @param {String} str String to convert
-   * @return {String} string with all FUNCTION_PLACEHOLDER strings replaced 
+   * @param {String} [placeHolder] string to replace.  
+   *                 Default: "FUNCTION_PLACEHOLDER"
+   * @param {String} [replacement] replacement for placeholder strings.
+   *                 Default: PackageStubber.functionReplacementStr
+   * @return {String} string with all placeholder strings replaced 
    *                  with `PackageStubber.functionReplacementStr`
    */
-  replaceFnPlaceholders: function (str) {
-    return str.replace(/"FUNCTION_PLACEHOLDER"/g, PackageStubber.functionReplacementStr)
-  },
+  replaceFnPlaceholders: function (str, placeholder, replacement) {
+    var regex
+
+    placeholder = placeholder || "FUNCTION_PLACEHOLDER"
+    replacement = replacement || PackageStubber.functionReplacementStr
+
+    regex = new RegExp(placeholder, 'g')
+
+    return str.replace(regex, replacement)
+  },  // end replaceFnPlaceholders
 
 
   stubGenerators: {
@@ -470,7 +485,7 @@ _.extend(PackageStubber, {
           defaultReturnStr = "{}"
 
       try {
-        intermediateStub = PackageStubber._stubObject(target)
+        intermediateStub = PackageStubber.deepCopyReplaceFn(target)
         stubInStringForm = PackageStubber.replaceFnPlaceholders(
                                JSON.stringify(intermediateStub, null, 2))
         return stubInStringForm
@@ -590,7 +605,34 @@ function ls (rootDir) {
 
     return memo
   }, [])
-}
+}  // end ls
+
+
+/**
+ * Normalizes path to application directory.
+ * If `appDir` field is not set on `options` param,
+ * uses PWD.
+ *
+ * @method normalizeAppDir
+ * @param {Object} [options] Optional, options object containing an `appDir` 
+ *                           string field pointing to the target Meteor
+ *                           application to process.
+ * @return {String} the normalized application directory
+ */
+function normalizeAppDir (options) {
+  var pwd = process.env.PWD
+
+  if (!options || 'string' !== typeof options.appDir) {
+    return pwd
+  }
+
+  if (options.appDir && options.appDir[0] !== path.sep) {
+    // relative path, prepend PWD
+    return path.join(pwd, options.appDir)
+  }
+
+  return options.appDir
+}  // end normalizeAppDir
 
 
 })();

@@ -1,0 +1,10 @@
+{
+  "packages": {
+    "iron-router": {},
+    "roles": {},
+    "moment": {},
+    "mocha-web-velocity": {},
+    "velocity": {},
+    "jasmine-unit": {}
+  }
+}

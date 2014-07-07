@@ -12,3 +12,11 @@ Package.on_use(function (api) {
 
   api.export && api.export('PackageStubber', 'server')
 });
+
+
+Package.on_test(function (api) {
+  api.use(['package-stubber', 'tinytest']);
+
+  api.add_files('main.js', ['server','client']);
+  api.add_files('package-stubber-tests.js', ['server','client']);
+});
