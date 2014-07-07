@@ -1,3 +1,9 @@
+## v0.0.8
+
+* improve underscore stub
+* add tests
+
+
 ## v0.0.7
 
 * remove extraneous console.log
