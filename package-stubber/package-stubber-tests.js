@@ -1,5 +1,6 @@
 var exampleAppDir = 'package-stubber/example-app';
 
+
 Tinytest.add('PackageStubber - finds test packages', function (test) {
   var expected = ['jasmine-unit', 'mocha-web-velocity'],
       actual;
@@ -10,6 +11,7 @@ Tinytest.add('PackageStubber - finds test packages', function (test) {
 
   test.equal(actual, expected);
 });
+
 
 Tinytest.add('PackageStubber - list packages', function (test) {
   var expected = [
@@ -85,7 +87,8 @@ Tinytest.add('PackageStubber - deep-copy object', function (test) {
         num:1,
         nil:null,
         d: new Date(1978, 7, 9),
-        child:{"name":"childObject",
+        child:{
+          name:"childObject",
           fn:"FUNCTION_PLACEHOLDER",
           num:2,
           nil:null,
@@ -120,22 +123,92 @@ Tinytest.add('PackageStubber - generate stub', function (test) {
           d: new Date(2009, 0, 1)
         }
       },
-      expected = {
-        name:"parentObject",
-        fn:"function emptyFn () {}",
-        num:1,
-        nil:null,
-        d: new Date(1978, 7, 9),
-        child:{"name":"childObject",
-          fn:"function emptyFn () {}",
-          num:2,
-          nil:null,
-          d: new Date(2009, 0, 1)
+      expected1 = {
+        "name": "parentObject",
+        "fn": "FUNCTION_PLACEHOLDER",
+        "num": 1,
+        "nil": null,
+        "d": new Date(1978, 7, 9),
+        "child": {
+          "name": "childObject",
+          "fn": "FUNCTION_PLACEHOLDER",
+          "num": 2,
+          "nil": null,
+          "d": new Date(2009, 0, 1)
         }
+      },
+      expected,
+      actual;
+
+  actual = PackageStubber.generateStubSource(target, 'test', 'test-package');
+  expected = JSON.stringify(expected1, null, 2)
+                 .replace(/"FUNCTION_PLACEHOLDER"/g, "function emptyFn () {}");
+  test.equal(actual, expected, 'defaults');
+});
+
+
+Tinytest.add('PackageStubber - list packages to ignore', function (test) {
+  var expected = new MiniSet([
+        "meteor-package-stubber",
+        "package-stubber",
+        "velocity",
+        "mirror",
+        "jasmine-unit",
+        "mocha-web-velocity"
+      ]),
+      actual;
+
+  actual = PackageStubber.listPackagesToIgnore({
+    appDir: exampleAppDir
+  });
+  test.equal(actual.keys().sort(), expected.keys().sort(), 'defaults');
+
+  expected.add('foo');
+  actual = PackageStubber.listPackagesToIgnore({
+    appDir: exampleAppDir,
+    dontStub: 'foo'
+  });
+  test.equal(actual.keys().sort(), expected.keys().sort(), 'dontStub string');
+
+  expected.add('bar');
+  actual = PackageStubber.listPackagesToIgnore({
+    appDir: exampleAppDir,
+    dontStub: ['foo', 'bar']
+  });
+  test.equal(actual.keys().sort(), expected.keys().sort(), 'dontStub array');
+});
+
+
+Tinytest.add('PackageStubber - get core stubs', function (test) {
+  var expected = [
+        'jquery',
+        'underscore'
+      ],
+      options = {
+        appDir: exampleAppDir
       },
       actual;
 
-  actual = PackageStubber.generateStubJsCode(target, 'test', 'test-package');
-  test.equal(actual, JSON.stringify(expected, null, 2), 'defaults');
+  options.packagesToIgnore = PackageStubber.listPackagesToIgnore(options);
+
+  actual = _.pluck(PackageStubber.getCoreStubs(options), 'package')
+
+  test.equal(actual.sort(), expected.sort(), 'defaults');
 });
 
+
+Tinytest.add('PackageStubber - get community stubs', function (test) {
+  var expected = [
+        'iron-router'
+      ],
+      options = {
+        appDir: exampleAppDir
+      },
+      actual;
+
+  options.packagesToIgnore = PackageStubber.listPackagesToIgnore(options);
+
+  actual = _.pluck(PackageStubber.getCommunityStubs(options), 'package')
+
+  test.equal(actual.sort(), expected.sort(), 'defaults');
+});

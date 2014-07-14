@@ -1,3 +1,9 @@
+## v0.0.10
+
+* refactor to respect 'dontStub' option for core packages
+* add tests
+
+
 ## v0.0.9
 
 * fix quoting bug in function replacement
