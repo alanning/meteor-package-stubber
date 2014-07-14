@@ -137,7 +137,7 @@ _.extend(PackageStubber, {
 
     generatedStubs = PackageStubber.buildStubs(options)
 
-    PackageStubber.writeStubs(generatedStubs, preMadeStubs)
+    PackageStubber.writeStubs(options.outfile, generatedStubs, preMadeStubs)
   },  // end stubPackages
 
 

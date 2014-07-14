@@ -1,3 +1,8 @@
+## v0.0.11
+
+* fix regression when writing stub files
+
+
 ## v0.0.10
 
 * refactor to respect 'dontStub' option for core packages
