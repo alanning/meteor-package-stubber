@@ -483,7 +483,7 @@ _.extend(PackageStubber, {
     options = options || {}
     options.appDir = normalizeAppDir(options)
 
-    smartJsonFiles = glob.sync(_p("**/smart.json"),
+    smartJsonFiles = glob.sync(_p("*/smart.json"),
                                {cwd: path.join(options.appDir, "packages")})
 
     _.each(smartJsonFiles, function (filePath) {
