@@ -306,8 +306,8 @@ _.extend(PackageStubber, {
           file,
           found
 
-      if (options.packagesToIgnore && options.packagesToIgnore.has(filePath)) {
-        DEBUG && console.log('[PackageStubber] ignoring', packageName)
+      if (options.packagesToIgnore && options.packagesToIgnore.has(packageName)) {
+        // skip this package.  don't need to auto-stub
         return
       }
 
