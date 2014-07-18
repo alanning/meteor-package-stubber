@@ -186,11 +186,7 @@ _.extend(PackageStubber, {
     _.each(stubFiles, function (filePath) {
       var corePackage = path.basename(filePath, '.js')
 
-      if (packagesToIgnore.has(corePackage)) {
-        DEBUG &&
-          console.log('[PackageStubber] skipping custom stub for core package',
-                       corePackage)
-      } else {
+      if (!packagesToIgnore.has(corePackage)) {
         DEBUG &&
           console.log('[PackageStubber] custom stub found for core package',
                        corePackage)
