@@ -136,6 +136,9 @@ _.extend(PackageStubber, {
     communityStubs = PackageStubber.getCommunityStubs(options)
     preMadeStubs = coreStubs.concat(communityStubs)
 
+    DEBUG && console.log("[PackageStubber] won't auto-stub these packages:",
+                         options.packagesToIgnore.keys())
+
     generatedStubs = PackageStubber.buildStubs(options)
 
     PackageStubber.writeStubs(options.outfile, generatedStubs, preMadeStubs)
@@ -238,12 +241,8 @@ _.extend(PackageStubber, {
       searchPath = '/packages/package-stubber/community-stubs/' + stubFile
       stubFilePath = _p(appDir + searchPath)
 
-      if (packagesToIgnore.has(packageName)) {
-        DEBUG &&
-          console.log('[PackageStubber] skipping community stub for package',
-                       packageName)
-      } else if (fs.existsSync(stubFilePath)) {
-        DEBUG && console.log('[PackageStubber] custom stub found for package',
+      if (!packagesToIgnore.has(packageName) && fs.existsSync(stubFilePath)) {
+        DEBUG && console.log('[PackageStubber] community stub found for',
                              packageName)
         packagesToIgnore.add(packageName)
         communityStubs.push({
@@ -411,7 +410,7 @@ _.extend(PackageStubber, {
 
     // append custom stubs
     _.each(preMadeStubs, function (stubConfig) {
-      DEBUG && console.log('[PackageStubber] appending custom stub for package',
+      DEBUG && console.log('[PackageStubber] appending pre-made stub for',
                            stubConfig.package)
       fs.appendFileSync(outfile, fs.readFileSync(stubConfig.filePath))
     })
@@ -617,7 +616,7 @@ _.extend(PackageStubber, {
         stubInStringForm = "function () { return " + stubInStringForm + "; }"
         return stubInStringForm
       } catch (ex) {
-        console.log("[PackageStubber] Calling exported function '" +
+        console.log("[PackageStubber] NOTE: Calling exported function '" +
                     name + "' in package '" + package + "' with no parameters" +
                     " produced an error. " +
                     "'" + name + "' has been stubbed with an empty function " +
@@ -648,7 +647,7 @@ _.extend(PackageStubber, {
                                JSON.stringify(intermediateStub, null, 2))
         return stubInStringForm
       } catch (ex) {
-        console.log("[PackageStubber] Error generating stub for exported " +
+        console.log("[PackageStubber] NOTE: Error generating stub for exported " +
                     "object '" + name + " in package '" + package + "'. " +
                     name + "' has been " +
                     "stubbed with an empty object but if you receive " +
