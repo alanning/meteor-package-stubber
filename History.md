@@ -1,3 +1,8 @@
+## v0.0.14
+
+* attach jQuery stub to both window object and global object. fix #24
+
+
 ## v0.0.13
 
 * properly ignore packages when auto-stubbing
