@@ -37,7 +37,7 @@ _.extend(PackageStubber, {
 
     /**
      * Validate function arguments
-     * 
+     *
      * @method validate.stubPackages
      */
     stubPackages: function (options) {
@@ -51,7 +51,7 @@ _.extend(PackageStubber, {
                         "relative to the current Meteor application")
       }
 
-      dontStubType = _.isArray(options.dontStub) ? 'array' 
+      dontStubType = _.isArray(options.dontStub) ? 'array'
                                                  : typeof options.dontStub
       dontStubTypeErrorMsg = "[PackageStubber.stubPackages] If supplied, the " +
                               "'dontStub' field must be the name of a " +
@@ -60,7 +60,7 @@ _.extend(PackageStubber, {
       if (dontStubType !== 'string' && dontStubType !== 'array') {
         throw new Error(dontStubTypeErrorMsg)
       }
-      
+
       function isNotString (something) {
         return 'string' !== typeof something
       }
@@ -74,7 +74,7 @@ _.extend(PackageStubber, {
 
     /**
      * Validate function arguments
-     * 
+     *
      * @method validate.deepCopyReplaceFn
      */
     deepCopyReplaceFn: function (target, fnPlaceholder) {
@@ -95,18 +95,18 @@ _.extend(PackageStubber, {
 
 
   /**
-   * Create stubs for all smart packages in the current Meteor app.  
+   * Create stubs for all smart packages in the current Meteor app.
    * Stubs will be written to a javascript file.
    *
-   * NOTE: This function must be run in a Meteor app's context so that the 
+   * NOTE: This function must be run in a Meteor app's context so that the
    * smart packages to stub are loaded and their object graphs can be traversed.
    *
    * @method stubPackages
    * @param {Object} options
-   * @param {Array|String} [options.dontStub] Names of packages to ignore 
+   * @param {Array|String} [options.dontStub] Names of packages to ignore
    *                           (ie. not stub).  Default: []
    * @param {String} [options.outfile] The file path to write the stubs to.
-   *                           Can be either an absolute file path or relative 
+   *                           Can be either an absolute file path or relative
    *                           to the current Meteor application.
    *                           Default: `tests/a1-package-stubs.js`
    */
@@ -119,7 +119,7 @@ _.extend(PackageStubber, {
 
     options = options || {}
 
-    options.outfile = options.outfile || 
+    options.outfile = options.outfile ||
                       path.join(pwd, 'tests', 'a1-package-stubs.js')
     options.dontStub = options.dontStub || []
 
@@ -146,23 +146,23 @@ _.extend(PackageStubber, {
   /**
    * List all pre-made stubs for core packages.
    *
-   * Since they are core and we have no way to detect their use (even 
-   * .meteor/packages doesn't have a complete list since dependencies 
-   * don't show up there), these are always included unless specifically 
+   * Since they are core and we have no way to detect their use (even
+   * .meteor/packages doesn't have a complete list since dependencies
+   * don't show up there), these are always included unless specifically
    * excluded in 'dontStub'
    *
-   * If a custom stub is found, the name of that package will be added to 
+   * If a custom stub is found, the name of that package will be added to
    * the packagesToIgnore set so the package auto-stubber does not try to stub
    * it.
    *
    * @method getCoreStubs
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify test packages for.
    *                                  Default: PWD (process working directory)
-   * @param {MiniSet} [options.packagesToIgnore] Set of package names that 
+   * @param {MiniSet} [options.packagesToIgnore] Set of package names that
    *                  should not be stubbed.  May be added to in function.
-   * @return {Array} list of core stub data objs 
+   * @return {Array} list of core stub data objs
    *                  { package: name, filePath: pathToStub }
    */
   getCoreStubs: function (options) {
@@ -170,7 +170,7 @@ _.extend(PackageStubber, {
         searchPath,
         packagesToIgnore,
         stubFiles
-     
+
     options = options || {}
     options.appDir = normalizeAppDir(options)
 
@@ -183,11 +183,11 @@ _.extend(PackageStubber, {
       var corePackage = path.basename(filePath, '.js')
 
       if (packagesToIgnore.has(corePackage)) {
-        DEBUG && 
+        DEBUG &&
           console.log('[PackageStubber] skipping custom stub for core package',
                        corePackage)
       } else {
-        DEBUG && 
+        DEBUG &&
           console.log('[PackageStubber] custom stub found for core package',
                        corePackage)
         packagesToIgnore.add(corePackage)
@@ -211,9 +211,9 @@ _.extend(PackageStubber, {
    *
    * @method getCoreStubs
    * @param {Object} [options]
-   * @param {MiniSet} [options.packagesToIgnore] Set of package names that 
+   * @param {MiniSet} [options.packagesToIgnore] Set of package names that
    *                  should not be stubbed.  May be added to in function.
-   * @return {Array} list of community stub data objs 
+   * @return {Array} list of community stub data objs
    *                  { package: name, filePath: pathToStub }
    */
   getCommunityStubs: function (options) {
@@ -221,7 +221,7 @@ _.extend(PackageStubber, {
         packagesToIgnore,
         communityStubs = [],
         appDir
-     
+
     options = options || {}
     options.appDir = normalizeAppDir(options)
     packagesToIgnore = options.packagesToIgnore || new MiniSet()
@@ -233,12 +233,12 @@ _.extend(PackageStubber, {
       var stubFile = packageName + ".js",
           stubFilePath,
           searchPath
-      
+
       searchPath = '/packages/package-stubber/community-stubs/' + stubFile
       stubFilePath = _p(appDir + searchPath)
 
       if (packagesToIgnore.has(packageName)) {
-        DEBUG && 
+        DEBUG &&
           console.log('[PackageStubber] skipping community stub for package',
                        packageName)
       } else if (fs.existsSync(stubFilePath)) {
@@ -261,7 +261,7 @@ _.extend(PackageStubber, {
    *
    * @method listPackages
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify package exports for.
    *                                  Default: PWD (process working directory)
    * @return {Array} names of all non-core packages used by app
@@ -276,7 +276,7 @@ _.extend(PackageStubber, {
 
 
   /**
-   * Get the names of all objects/functions which are exported by packages 
+   * Get the names of all objects/functions which are exported by packages
    * in a Meteor application.
    * Exports are identified by parsing each package's `package.js` file and
    * extracting out their `api.export(...)` calls.
@@ -287,7 +287,7 @@ _.extend(PackageStubber, {
    *
    * @method listPackageExports
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify package exports for.
    *                                  Default: PWD (process working directory)
    * @param {MiniSet} [options.packagesToIgnore] Set of package names to ignore
@@ -296,33 +296,42 @@ _.extend(PackageStubber, {
    */
   listPackageExports: function (options) {
     var packageJsFiles,
-        packageExports = [],
-        exportsRE = /api\.export\s*\(\s*(['"])(.*?)\1/igm
-        
+        packageExports = []
+
     options = options || {}
     options.appDir = normalizeAppDir(options)
 
-    packageJsFiles = glob.sync(path.join("**", "package.js"), 
+    packageJsFiles = glob.sync(path.join("**", "package.js"),
                                {cwd: path.join(options.appDir, "packages")})
 
     _.each(packageJsFiles, function (filePath) {
-      var package = path.dirname(filePath),
+      var packageName = path.dirname(filePath),
+          exportsRE = /api\.export\s*\(\s*(?:(['"])(.+?)\1|(\[.+?\]))/igm,
           file,
           found
 
       if (options.packagesToIgnore && options.packagesToIgnore.has(filePath)) {
-        DEBUG && console.log('[PackageStubber] ignoring', package)
+        DEBUG && console.log('[PackageStubber] ignoring', packageName)
         return
       }
 
       try {
         file = fs.readFileSync(path.join(options.appDir, "packages", filePath), 'utf8')
         while(found = exportsRE.exec(file)) {
-          DEBUG && console.log('[PackageStubber] found', found[2], 'in', filePath)
-          packageExports.push({
-            package: package,
-            name: found[2]
-          })
+          var exports = []
+          if (found[2]) {
+            exports = [found[2]]
+          } else if (found[3]) {
+            exports = JSON.parse(found[3].replace(/'/g, '"'))
+          }
+
+          exports.forEach(function (name) {
+            DEBUG && console.log('[PackageStubber] found', name, 'in', filePath)
+            packageExports.push({
+              package: packageName,
+              name: name
+            })
+          });
         }
       } catch (ex) {
         DEBUG && console.log('[PackageStubber] Error reading file', filePath, ex)
@@ -339,10 +348,10 @@ _.extend(PackageStubber, {
    *
    * @method buildStubs
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify package exports for.
    *                                  Default: PWD (process working directory)
-   * @param {MiniSet} [options.packagesToIgnore] Set of package names that 
+   * @param {MiniSet} [options.packagesToIgnore] Set of package names that
    *                  should not be stubbed.  May be added to in function.
    * @return {Object} object with one field of type `string` for each global
    *                  field that is being stubbed (ie. each package export)
@@ -350,7 +359,7 @@ _.extend(PackageStubber, {
   buildStubs: function (options) {
     var packageExports,
         stubs = {}
-      
+
     packageExports = PackageStubber.listPackageExports(options)
 
     _.each(packageExports, function (exportInfo) {
@@ -359,7 +368,7 @@ _.extend(PackageStubber, {
           toStub = global[name]
 
       if (toStub) {
-        DEBUG && console.log('[PackageStubber] stubbing', name, 
+        DEBUG && console.log('[PackageStubber] stubbing', name,
                              'in package', package)
         // `stubs` object will have one field of type `string` for each global
         // object that is being stubbed (ie. each package export)
@@ -380,8 +389,8 @@ _.extend(PackageStubber, {
    * Write both generated stubs and pre-existing stubs to file
    *
    * @method writeStubs
-   * @param {Object} generatedStubs object with one field of type `string` 
-   *                 for each global field that is being stubbed (ie. each 
+   * @param {Object} generatedStubs object with one field of type `string`
+   *                 for each global field that is being stubbed (ie. each
    *                 package export)
    */
   writeStubs: function (outfile, generatedStubs, preMadeStubs) {
@@ -409,14 +418,14 @@ _.extend(PackageStubber, {
 
 
   /**
-   * Get all packages that should be ignored (ie. not stubbed) 
+   * Get all packages that should be ignored (ie. not stubbed)
    *
    * @method listPackagesToIgnore
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify test packages for.
    *                                  Default: PWD (process working directory)
-   * @param {Array|String} [options.dontStub] Names of packages to ignore 
+   * @param {Array|String} [options.dontStub] Names of packages to ignore
    *                           (ie. not stub).  Default: []
    * @return {MiniSet} set of all package names that should not be stubbed.
    *                 Ex. ['jasmine-unit', 'mocha-web-velocity']
@@ -432,7 +441,7 @@ _.extend(PackageStubber, {
     _.each(defaultPackagesToIgnore, function (packageName) {
       packagesToIgnore.add(packageName)
     })
-    
+
 
     // ignore 'dontStub' packages
 
@@ -440,7 +449,7 @@ _.extend(PackageStubber, {
     dontStub = options.dontStub || []
     if ('string' === typeof dontStub) {
       dontStub = [dontStub]
-    } 
+    }
 
     _.each(dontStub, function (packageName) {
       packagesToIgnore.add(packageName)
@@ -461,20 +470,20 @@ _.extend(PackageStubber, {
    *
    * @method listTestPackages
    * @param {Object} [options]
-   * @param {String} [options.appDir] Directory path of Meteor application to 
+   * @param {String} [options.appDir] Directory path of Meteor application to
    *                                  identify test packages for.
    *                                  Default: PWD (process working directory)
-   * @return {Array} names of all test packages.  
+   * @return {Array} names of all test packages.
    *                 Ex. ['jasmine-unit', 'mocha-web-velocity']
    */
   listTestPackages: function (options) {
     var smartJsonFiles,
         names = []
-        
+
     options = options || {}
     options.appDir = normalizeAppDir(options)
 
-    smartJsonFiles = glob.sync(_p("**/smart.json"), 
+    smartJsonFiles = glob.sync(_p("**/smart.json"),
                                {cwd: path.join(options.appDir, "packages")})
 
     _.each(smartJsonFiles, function (filePath) {
@@ -486,14 +495,14 @@ _.extend(PackageStubber, {
         if (smartJson && smartJson.testPackage) {
           names.push(path.dirname(filePath))
         }
-      } 
+      }
       catch (ex) {
         DEBUG && console.log('[PackageStubber]', filePath, ex)
       }
     })
 
     return names
-  },  // end listTestPackages 
+  },  // end listTestPackages
 
 
   /**
@@ -502,7 +511,7 @@ _.extend(PackageStubber, {
    *
    * @method deepCopyReplaceFn
    * @param {Object} target The object that will be stubbed.
-   * @param {String} [fnPlaceholder] string to use in place of any function 
+   * @param {String} [fnPlaceholder] string to use in place of any function
    *                 fields.  Default: "FUNCTION_PLACEHOLDER"
    * @return {Object} new object, with all functions replaced with the
    *                  fnPlaceholder string
@@ -558,11 +567,11 @@ _.extend(PackageStubber, {
    *
    * @method replaceFnPlaceholders
    * @param {String} str String to convert
-   * @param {String} [placeHolder] string to replace.  
+   * @param {String} [placeHolder] string to replace.
    *                 Default: "FUNCTION_PLACEHOLDER"
    * @param {String} [replacement] replacement for placeholder strings.
    *                 Default: PackageStubber.functionReplacementStr
-   * @return {String} string with all placeholder strings replaced 
+   * @return {String} string with all placeholder strings replaced
    *                  with `PackageStubber.functionReplacementStr`
    */
   replaceFnPlaceholders: function (str, placeholder, replacement) {
@@ -586,7 +595,7 @@ _.extend(PackageStubber, {
      * @param {Function} target Target function to stub
      * @param {String} name Name of target object for use in reporting errors
      * @param {String} package Name of target package for use in errors
-     * @return {String} Javascript code in string form which, when executed, 
+     * @return {String} Javascript code in string form which, when executed,
      *                  builds the stub in the then-current global context
      */
     'function': function (target, name, package) {
@@ -688,7 +697,7 @@ _.extend(PackageStubber, {
 
   /**
    * Creates a stub of the target object or function.  Stub is in the form
-   * of js source code in string form which, when executed, builds the stubs 
+   * of js source code in string form which, when executed, builds the stubs
    * in the then-current global context.
    *
    * Useful when auto-stubbing Meteor packages and then running unit tests
@@ -698,12 +707,12 @@ _.extend(PackageStubber, {
    * @param {Any} target Target to stub
    * @param {String} name Name thing to stub for use in reporting errors
    * @param {String} package Name of target package for use in errors
-   * @return {String} Javascript code in string form which, when executed, 
+   * @return {String} Javascript code in string form which, when executed,
    *                  builds the stub in the then-current global context
    */
   generateStubSource: function (target, name, package) {
     var typeOfTarget = typeof target,
-        stubGenerator 
+        stubGenerator
 
     if (null === target) {
       // handle null special case since it has type "object"
@@ -761,7 +770,7 @@ function ls (rootDir) {
  *
  * @method normalizeAppDir
  * @param {Object} [options]
- * @param {String} [options.appDir] Directory path of Meteor application to 
+ * @param {String} [options.appDir] Directory path of Meteor application to
  *                                  identify package exports for.
  *                                  Default: PWD (process working directory)
  * @return {String} absolute path to application directory
