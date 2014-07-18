@@ -15,6 +15,7 @@ var pwd = process.env.PWD,
       'meteor-package-stubber',
       'package-stubber',
       'velocity',
+      'velocity-html-reporter',
       'mirror'
     ]
 
