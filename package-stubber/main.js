@@ -297,7 +297,7 @@ _.extend(PackageStubber, {
     options = options || {}
     options.appDir = normalizeAppDir(options)
 
-    packageJsFiles = glob.sync(path.join("**", "package.js"),
+    packageJsFiles = glob.sync(path.join("*", "package.js"),
                                {cwd: path.join(options.appDir, "packages")})
 
     _.each(packageJsFiles, function (filePath) {
