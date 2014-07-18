@@ -1,3 +1,8 @@
+## v0.0.12
+
+* Support packages that use the array syntax when exporting
+
+
 ## v0.0.11
 
 * fix regression when writing stub files
