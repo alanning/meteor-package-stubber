@@ -1,3 +1,9 @@
+## v0.0.13
+
+* properly ignore packages when auto-stubbing
+* limit exports search to top level of packages dir (no sub-dirs)
+
+
 ## v0.0.12
 
 * Support packages that use the array syntax when exporting
