@@ -1,3 +1,8 @@
+## v0.0.15
+
+* handle case where top-level function returns a non-object
+
+
 ## v0.0.14
 
 * attach jQuery stub to both window object and global object. fix #24

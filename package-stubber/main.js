@@ -79,16 +79,18 @@ _.extend(PackageStubber, {
      * @method validate.deepCopyReplaceFn
      */
     deepCopyReplaceFn: function (target, fnPlaceholder) {
+      var lbl = "[PackageStubber.deepCopyReplaceFn] "
+
       if (null === target ||
           'object' !== typeof target) {
-        throw new Error("[PackageStubber.deepCopyReplaceFn] Required field `target` " +
-                        "must be an object")
+        throw new Error(lbl + "Required field `target` must be a non-null " +
+                        "object. Actual type: '" + typeof target + "'")
       }
       if (null !== fnPlaceholder &&
           'undefined' !== typeof fnPlaceholder &&
           'string' !== typeof fnPlaceholder) {
-        throw new Error("[PackageStubber.deepCopyReplaceFn] If supplied, the " +
-                        "'fnPlaceholder' field must be a string")
+        throw new Error(lbl + "If supplied, the 'fnPlaceholder' field must " +
+                        "be a string")
       }
     }
 
@@ -364,8 +366,8 @@ _.extend(PackageStubber, {
           toStub = global[name]
 
       if (toStub) {
-        DEBUG && console.log('[PackageStubber] stubbing', name,
-                             'in package', package)
+        DEBUG && console.log("[PackageStubber] stubbing", typeof toStub,
+                             "'" + name + "' in package", package)
         // `stubs` object will have one field of type `string` for each global
         // object that is being stubbed (ie. each package export)
         stubs[name] = PackageStubber.generateStubSource(toStub, name, package)
@@ -597,7 +599,8 @@ _.extend(PackageStubber, {
     'function': function (target, name, package) {
       var stubInStringForm,
           defaultReturnStr = PackageStubber.functionReplacementStr,
-          objStubber = PackageStubber.stubGenerators['object']
+          stubGenerator,
+          warningMsg
 
       // Attempt to instantiate new constructor with no parameters.
       //   ex. moment().format('MMM dd, YYYY')
@@ -606,19 +609,33 @@ _.extend(PackageStubber, {
       // In this case, not much we can do.  Just alert the user and stub
       // with an empty function.
 
+      warningMsg = function (isError) {
+        return "[PackageStubber] NOTE: Calling exported function '" +
+               name + "' in package '" + package + "' with no parameters " +
+               (isError ? "threw an error. " : "returned null or undefined. ") +
+               "'" + name + "' has been stubbed with an empty function " +
+               "but if you receive errors due to missing fields in " +
+               "this package, you will need to supply your own " +
+               "custom stub for '" + name + "'. " +
+               "For example, 'tests" + path.sep + package + "-stub.js'.  " +
+               "Once you have a working stub, please consider contributing " +
+               "it back to the community stubs in the `package-stubber` repo."
+      }
+
       try {
         target = target()
-        stubInStringForm = objStubber(target, name, package)
+
+        if (!target) {
+          console.log(warningMsg())
+          return defaultReturnStr
+        }
+
+        stubGenerator = PackageStubber.stubGenerators[typeof target]
+        stubInStringForm = stubGenerator(target, name, package)
         stubInStringForm = "function () { return " + stubInStringForm + "; }"
         return stubInStringForm
       } catch (ex) {
-        console.log("[PackageStubber] NOTE: Calling exported function '" +
-                    name + "' in package '" + package + "' with no parameters" +
-                    " produced an error. " +
-                    "'" + name + "' has been stubbed with an empty function " +
-                    "but if you receive errors due to missing fields in " +
-                    "this package, you will need to supply your own " +
-                    "custom stub. The original error was: ", ex.message)
+        console.log(warningMsg(true), "The original error was: ", ex.message)
         return defaultReturnStr
       }
     },
@@ -643,13 +660,16 @@ _.extend(PackageStubber, {
                                JSON.stringify(intermediateStub, null, 2))
         return stubInStringForm
       } catch (ex) {
-        console.log("[PackageStubber] NOTE: Error generating stub for exported " +
-                    "object '" + name + " in package '" + package + "'. " +
-                    name + "' has been " +
-                    "stubbed with an empty object but if you receive " +
-                    "errors due to missing fields in this package, you " +
-                    "will need to supply your own custom stub. The " +
-                    "original error follows:\n", ex.message)
+        console.log("[PackageStubber] NOTE: There was an error thrown while'" +
+               "attempting to generate a stub for '" + name + "' in package '" +
+               package + "'. " + name + " has been stubbed with an empty " +
+               "object but if you receive errors due to missing fields in " +
+               "this package, you will need to supply your own " +
+               "custom stub for '" + name + "'. " +
+               "For example, 'tests" + path.sep + package + "-stub.js'.  " +
+               "Once you have a working stub, please consider contributing " +
+               "it back to the community stubs in the `package-stubber` repo." +
+               "The original error was:\n", ex.message)
         return defaultReturnStr
       }
     },

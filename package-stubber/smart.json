@@ -3,6 +3,6 @@
     "description": "Auto-stubber for Meteor smart packages",
     "homepage": "https://github.com/alanning/meteor-package-stubber",
     "author": "Adrian Lanning",
-    "version": "0.0.14",
+    "version": "0.0.15",
     "git": "https://github.com/alanning/meteor-package-stubber.git"
 }
