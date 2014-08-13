@@ -1,7 +1,7 @@
 {
   "name": "Meteor Package Stubber",
   "description": "Auto-stubber for Meteor smart packages",
-  "version": "v0.0.15",
+  "version": "v0.0.16",
   "options": {
     "outdir": "./docs",
     "exclude": ".meteor,.git,.npm,.build,example-app,community-stubs,core-stubs,package-stubber-tests.js",
