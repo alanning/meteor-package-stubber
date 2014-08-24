@@ -1,3 +1,8 @@
+## v0.0.16
+
+* add stub: `iron-core` by @hkirk 
+
+
 ## v0.0.15
 
 * handle case where top-level function returns a non-object
