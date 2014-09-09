@@ -2,7 +2,7 @@
 //
 // Stubs for the tmeasday's Router package.
 // https://github.com/tmeasday/meteor-router
-
+;
 (function () {
 
   var emptyFunction = function () {};
